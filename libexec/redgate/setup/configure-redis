@@ -1,0 +1,25 @@
+#!/bin/bash
+#
+# 
+#
+#
+
+function die() {
+    echo "$*" 1>&2
+    exit 1
+}
+
+[ $(id --user) -ne 0 ] && die "Must be root to configure redis"
+
+function user_exists() {
+    getent passwd $* > /dev/null 2>&1
+}
+
+user_exists example || die "redis requires the example user is configured"
+user_exists redis || die "redis requires the redis user is configured"
+
+install --directory --mode=755 --owner=redis --group=redis /var/db/redis
+
+redis-cli config set appendonly yes 2>&1 | logger -t configure-redis
+
+: vim:autoindent expandtab sw=4

@@ -1,0 +1,37 @@
+#!/bin/bash
+#
+# Save the SMBIOS/DMI system uuid and serial number in
+# appliance config files.  If there are errors in determining
+# these files then generate our own uuids.
+#
+# There are two config files:
+# - the plain files in /etc/maytag/* # for python
+# - and the sysconfig file (std for centos) for easy bash/name-value reading
+#
+
+sysconfig=/etc/sysconfig/redgate
+
+uuid=$(dmidecode --string system-uuid)
+
+case "$uuid" in
+"Not Specified") uuid=$(uuidgen) ;;
+"")              uuid=$(uuidgen) ;;
+esac
+
+[ -f $sysconfig/system-uuid-override ] && uuid=$(<$sysconfig/system-uuid-override)
+
+serialno=$(dmidecode --string system-serial-number)
+
+case "$serialno" in
+"Not Specified") serialno=$(uuidgen) ;;
+"")              serialno=$(uuidgen) ;;
+esac
+
+[ -f $sysconfig/system-serial-number-override ] && uuid=$(<$sysconfig/system-serial-number-override)
+
+cat > $sysconfig/system-info <<END
+SYSTEM_UUID=$uuid
+SERIAL_NUMBER=$serialno
+END
+
+: vim:autoindent expandtab sw=4

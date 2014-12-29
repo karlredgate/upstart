@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# Set up users
+#
+
+function die() {
+    echo "$*" 1>&2
+    exit 1
+}
+
+[ $(id --user) -ne 0 ] && die "Must be root to create users"
+
+function group_exists() {
+    getent group $* > /dev/null 2>&1
+}
+
+function user_exists() {
+    getent passwd $* > /dev/null 2>&1
+}
+
+# Note: Make the default password for a new users "example".
+password="example"
+pass=$(openssl passwd -1 -salt DeadBeef $password)
+
+group_exists examplegroup || groupadd examplegroup || :
+user_exists exampleuser || useradd exampleuser -p $pass -g examplegroup --create-home --shell /bin/false || :
+# This needs to be "searchable" by other users - like redis
+chmod 755 ~exampleuser
+install --directory --owner=exampleuser --group=examplegroup ~exampleuser/maytag
+
+user_exists app-admin || useradd app-admin -p $pass -g exampleuser --create-home || :
+
+: vim:autoindent
+: vim:expandtab

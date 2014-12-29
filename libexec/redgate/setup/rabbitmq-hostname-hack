@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# rabbitmq-server is written in Erlang and Erlang/OTP uses
+# nameservice (sort of like the portmapper for NFS), and the
+# Erlang/OTP nameservice requires the ability to lookup the
+# hostname.  This is either the hostname to IP or the IP from
+# the hostname using a reverse lookup - it is yet to be
+# determined which is really the problem.
+#
+# The workaround in general use is to add the current short
+# hostname to IP mapping to the hosts file (or more generally
+# to the getXXbyXX libc calls).
+#
+# This script gets the current base IPv4 address from the eth0
+# interface and associates it with the short hostname of the
+# current machine.  This is a hack - the Erlang issue should
+# get resolved - but that will take some serious debugging.
+#
+# * It may make sense for this to run at every boot of the OS.
+# * It may also make sense for this to run every time
+#   dhclient gets a new lease.
+#
+
+hostname=$( hostname -s )
+address=$( ip -4 -oneline address list dev eth0 | sed -e 's/.*inet //' -e "s|/.*||" )
+
+# Clean out old entries
+sed --in-place "/	$hostname\$/d" /etc/hosts
+echo "$address	$hostname" >> /etc/hosts
+
+: vim:autoindent
+: vim:expandtab

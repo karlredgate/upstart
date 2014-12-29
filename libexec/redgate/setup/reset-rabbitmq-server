@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Reset rabbitmq configuration based on current system UUID.
+#
+
+function die() {
+    echo "$*" 1>&2
+    exit 1
+}
+
+for conf in appliance system-info
+do
+    file=/etc/sysconfig/redgate/$conf
+    [ -f $file ] && . $file
+done
+
+case "$SYSTEM_UUID" in
+????????-????-????-????-????????????) ;;
+*) die "Invalid system uuid -- '$SYSTEM_UUID'" ;;
+esac
+
+rabbitmqctl stop_app
+rabbitmqctl reset
+rabbitmqctl start_app
+internal_passwd=$(echo -n $SYSTEM_UUID"internal-amqp" | shasum -a 512 | base64 | head -c 32)
+rabbitmqctl delete_user guest
+rabbitmqctl add_user bmragent 05baf6e7d8ab383d7a1409b74df605e7
+rabbitmqctl add_user internal ${internal_passwd}
+rabbitmqctl set_permissions -p / internal ".*" ".*" ".*"
+rabbitmqctl set_permissions -p / bmragent "(^device.*|^appliance->.*)" "(amq\.default)" "^appliance->.*"
+
+: vim:autoindent expandtab sw=4

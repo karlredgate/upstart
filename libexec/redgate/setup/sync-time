@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# sync-time - kredgate - 11/25/13
+#
+# Force time synchronization with external server.
+# This really should not be necessary.  If ntp is configured
+# correctly, it is handled automatically by ntpd.
+#
+# It is also generally a bad idea to force a large time sync
+# since it screws up timestamps in log files.
+#
+
+server=${1:-pool.ntp.org}
+
+service ntp stop
+ntpdate -v $server
+service ntp start
+
+logger -p cron.notice -t redgate "time synchronized with $server"
+
+: vim:autoindent expandtab sw=4
